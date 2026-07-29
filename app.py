@@ -136,26 +136,42 @@ if df_latest is not None:
 
     st.dataframe(profile_df, use_container_width=True)
 
-    # SECTION 3: Twin District Finder
+    # SECTION 3: Twin District Finder (CASCADING DROPDOWNS: STATE -> DISTRICT)
     st.markdown("---")
     st.subheader("3. 🔍 Twin District Finder")
-    st.write("Select a district to find its top 3 most economically similar 'twins' in Malaysia based on Euclidean distance in scaled space.")
+    st.write("Select a State and District to find its top 3 most economically similar 'twins' in Malaysia based on Euclidean distance in scaled space.")
 
-    district_list = sorted(df_latest['district'].unique())
-    selected_district = st.selectbox("Select a District:", district_list)
+    # Two columns for cleaner layout
+    select_col1, select_col2 = st.columns(2)
+
+    with select_col1:
+        state_list = sorted(df_latest['state'].unique())
+        selected_state = st.selectbox("1. Select a State:", state_list)
+
+    # Filter districts by the chosen state
+    districts_in_state = sorted(df_latest[df_latest['state'] == selected_state]['district'].unique())
+
+    with select_col2:
+        selected_district = st.selectbox("2. Select a District:", districts_in_state)
 
     if selected_district:
-        target_idx = df_latest[df_latest['district'] == selected_district].index[0]
+        # Get target district index
+        target_idx = df_latest[
+            (df_latest['state'] == selected_state) & (df_latest['district'] == selected_district)
+        ].index[0]
+        
         row_pos = df_latest.index.get_loc(target_idx)
         
+        # Calculate pairwise distance
         distances = pairwise_distances([X_scaled[row_pos]], X_scaled)[0]
         
         df_temp = df_latest.copy()
         df_temp['distance'] = distances
         
-        twins = df_temp[df_temp['district'] != selected_district].nsmallest(3, 'distance')
+        # Get top 3 nearest matches (excluding itself)
+        twins = df_temp[df_temp.index != target_idx].nsmallest(3, 'distance')
         
-        st.write(f"**Top 3 Twin Districts for '{selected_district}':**")
+        st.write(f"**Top 3 Twin Districts for '{selected_district}, {selected_state}':**")
         
         cols = st.columns(3)
         for i, (_, row) in enumerate(twins.iterrows()):
