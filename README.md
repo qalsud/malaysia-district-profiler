@@ -2,7 +2,7 @@
 
 An interactive web dashboard and unsupervised machine learning pipeline that categorizes ~160 administrative districts across Malaysia into socioeconomic archetypes using census data from OpenDOSM.
 
-Live Demo: [https://your-app-name.streamlit.app](https://your-app-name.streamlit.app)
+Live Demo: https://malaysia-district-profiler-irvqp4zbpzyq99vk8fecp3.streamlit.app/
 
 ---
 
