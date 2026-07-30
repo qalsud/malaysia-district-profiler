@@ -256,3 +256,11 @@ if df_all is not None:
         st.plotly_chart(fig_trend, use_container_width=True)
     else:
         st.info("Select at least one state to view trends.")
+
+    st.markdown("---")
+    st.markdown(
+        "**Data sources:** "
+        "[HIES District](https://api.data.gov.my/data-catalogue?id=hies_district) | "
+        "[LFS District](https://api.data.gov.my/data-catalogue?id=lfs_district) | "
+        "[OpenDOSM](https://open.dosm.gov.my)"
+    )
