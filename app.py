@@ -121,8 +121,8 @@ if df_all is not None:
         hover_name='district',
         hover_data=['state', 'income_median', 'expenditure_mean', 'poverty', 'u_rate', 'p_rate'],
         labels={
-            'PC1': 'Principal Component 1',
-            'PC2': 'Principal Component 2',
+            'PC1': 'PC1: Economic Prosperity (Income & Spending)',
+            'PC2': 'PC2: Labour Market Health (Unemployment & Participation)',
             'cluster_name': 'District Profile'
         },
         template='plotly_white',
