@@ -111,6 +111,7 @@ if df_all is not None:
 
     # SECTION 1: PCA Plot
     st.subheader("1. Interactive District Cluster Map (2D PCA Projection)")
+    st.markdown("Each point is a district. Districts closer together have similar economic profiles. The two axes compress 7 economic indicators into 2 dimensions for visualization.")
 
     fig = px.scatter(
         df_latest,
@@ -132,6 +133,7 @@ if df_all is not None:
     # SECTION 2: Correlation Heatmap
     st.markdown("---")
     st.subheader("2. Feature Correlation Matrix")
+    st.markdown("Shows how strongly pairs of indicators move together. Darker red means a strong positive correlation, darker blue means a strong negative one. Use this to understand trade-offs between metrics.")
 
     corr_matrix = df_latest[features].corr()
     fig_corr = px.imshow(
@@ -147,6 +149,7 @@ if df_all is not None:
     # SECTION 3: Cluster Profiles
     st.markdown("---")
     st.subheader("3. Cluster Profile Summary")
+    st.markdown("Average values of each indicator within each cluster. Compare how the archetypes differ across income, poverty, unemployment, and more.")
 
     profile_df = df_latest.groupby('cluster_name')[
         ['income_median', 'income_mean', 'expenditure_mean', 'gini', 'poverty', 'u_rate', 'p_rate']
@@ -207,6 +210,7 @@ if df_all is not None:
     # SECTION 5: Trends Over Time
     st.markdown("---")
     st.subheader("5. :material/trending_up: Trends Over Time")
+    st.markdown("See how economic indicators have changed between survey years across states. Select states and a metric to compare trajectories.")
 
     trend_df = df_all.copy()
     trend_df['year'] = trend_df['date'].dt.year
