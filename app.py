@@ -233,58 +233,61 @@ if df_all is not None:
             dist_b = st.selectbox("District B — Select District", dists_b, key="dist_b")
 
         if dist_a and dist_b:
-            idx_a = df_latest[(df_latest['state'] == state_a) & (df_latest['district'] == dist_a)].index[0]
-            idx_b = df_latest[(df_latest['state'] == state_b) & (df_latest['district'] == dist_b)].index[0]
-            row_a = df_latest.index.get_loc(idx_a)
-            row_b = df_latest.index.get_loc(idx_b)
+            if state_a == state_b and dist_a == dist_b:
+                st.warning("Select two different districts to compare.")
+            else:
+                idx_a = df_latest[(df_latest['state'] == state_a) & (df_latest['district'] == dist_a)].index[0]
+                idx_b = df_latest[(df_latest['state'] == state_b) & (df_latest['district'] == dist_b)].index[0]
+                row_a = df_latest.index.get_loc(idx_a)
+                row_b = df_latest.index.get_loc(idx_b)
 
-            vals_a = X_scaled[row_a]
-            vals_b = X_scaled[row_b]
-            cluster_a = df_latest.loc[idx_a, 'cluster_name']
-            cluster_b = df_latest.loc[idx_b, 'cluster_name']
-            centroid_a = kmeans.cluster_centers_[df_latest.loc[idx_a, 'cluster']]
-            centroid_b = kmeans.cluster_centers_[df_latest.loc[idx_b, 'cluster']]
+                vals_a = X_scaled[row_a]
+                vals_b = X_scaled[row_b]
+                cluster_a = df_latest.loc[idx_a, 'cluster_name']
+                cluster_b = df_latest.loc[idx_b, 'cluster_name']
+                centroid_a = kmeans.cluster_centers_[df_latest.loc[idx_a, 'cluster']]
+                centroid_b = kmeans.cluster_centers_[df_latest.loc[idx_b, 'cluster']]
 
-            theta_labels = [metric_labels[f] for f in features]
-            fig_compare = go.Figure()
-            fig_compare.add_trace(go.Scatterpolar(
-                r=vals_a, theta=theta_labels, fill='toself',
-                name=f'{dist_a} ({cluster_a})'
-            ))
-            fig_compare.add_trace(go.Scatterpolar(
-                r=centroid_a, theta=theta_labels, fill='none',
-                name=f'{cluster_a} avg', line=dict(dash='dash')
-            ))
-            fig_compare.add_trace(go.Scatterpolar(
-                r=vals_b, theta=theta_labels, fill='toself',
-                name=f'{dist_b} ({cluster_b})'
-            ))
-            fig_compare.add_trace(go.Scatterpolar(
-                r=centroid_b, theta=theta_labels, fill='none',
-                name=f'{cluster_b} avg', line=dict(dash='dash')
-            ))
-            fig_compare.update_layout(
-                polar=dict(radialaxis=dict(visible=True)),
-                template='plotly_white', height=500,
-                title=f'{dist_a} vs {dist_b}'
-            )
-            st.plotly_chart(fig_compare, use_container_width=True)
+                theta_labels = [metric_labels[f] for f in features]
+                fig_compare = go.Figure()
+                fig_compare.add_trace(go.Scatterpolar(
+                    r=vals_a, theta=theta_labels, fill='toself',
+                    name=f'{dist_a} ({cluster_a})'
+                ))
+                fig_compare.add_trace(go.Scatterpolar(
+                    r=centroid_a, theta=theta_labels, fill='none',
+                    name=f'{cluster_a} avg', line=dict(dash='dash')
+                ))
+                fig_compare.add_trace(go.Scatterpolar(
+                    r=vals_b, theta=theta_labels, fill='toself',
+                    name=f'{dist_b} ({cluster_b})'
+                ))
+                fig_compare.add_trace(go.Scatterpolar(
+                    r=centroid_b, theta=theta_labels, fill='none',
+                    name=f'{cluster_b} avg', line=dict(dash='dash')
+                ))
+                fig_compare.update_layout(
+                    polar=dict(radialaxis=dict(visible=True)),
+                    template='plotly_white', height=500,
+                    title=f'{dist_a} vs {dist_b}'
+                )
+                st.plotly_chart(fig_compare, use_container_width=True)
 
-            row_a_raw = df_latest.loc[idx_a]
-            row_b_raw = df_latest.loc[idx_b]
-            compare_data = []
-            for f in features:
-                label = metric_labels[f]
-                val_a = row_a_raw[f]
-                val_b = row_b_raw[f]
-                if f in ('income_median', 'income_mean', 'expenditure_mean'):
-                    compare_data.append([label, f'RM {val_a:,.0f}', f'RM {val_b:,.0f}'])
-                elif f in ('poverty', 'u_rate', 'p_rate'):
-                    compare_data.append([label, f'{val_a:.1f}%', f'{val_b:.1f}%'])
-                elif f == 'gini':
-                    compare_data.append([label, f'{val_a:.3f}', f'{val_b:.3f}'])
-            compare_df = pd.DataFrame(compare_data, columns=['Metric', dist_a, dist_b])
-            st.dataframe(compare_df, use_container_width=True)
+                row_a_raw = df_latest.loc[idx_a]
+                row_b_raw = df_latest.loc[idx_b]
+                compare_data = []
+                for f in features:
+                    label = metric_labels[f]
+                    val_a = row_a_raw[f]
+                    val_b = row_b_raw[f]
+                    if f in ('income_median', 'income_mean', 'expenditure_mean'):
+                        compare_data.append([label, f'RM {val_a:,.0f}', f'RM {val_b:,.0f}'])
+                    elif f in ('poverty', 'u_rate', 'p_rate'):
+                        compare_data.append([label, f'{val_a:.1f}%', f'{val_b:.1f}%'])
+                    elif f == 'gini':
+                        compare_data.append([label, f'{val_a:.3f}', f'{val_b:.3f}'])
+                compare_df = pd.DataFrame(compare_data, columns=['Metric', dist_a, dist_b])
+                st.dataframe(compare_df, use_container_width=True)
 
     # SECTION 4: Twin District Finder
     st.markdown("---")
