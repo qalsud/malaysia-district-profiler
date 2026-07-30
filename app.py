@@ -25,7 +25,7 @@ def load_and_preprocess_data():
     response = requests.get(url_hies)
     if response.status_code != 200:
         st.error("Failed to fetch HIES data from OpenDOSM API.")
-        return None, None, None
+        return None, None, None, None
 
     df_hies = pd.DataFrame(response.json())
     df_hies['date'] = pd.to_datetime(df_hies['date'])
@@ -34,7 +34,7 @@ def load_and_preprocess_data():
     response = requests.get(url_lfs)
     if response.status_code != 200:
         st.error("Failed to fetch LFS data from OpenDOSM API.")
-        return None, None, None
+        return None, None, None, None
 
     df_lfs = pd.DataFrame(response.json())
     df_lfs['date'] = pd.to_datetime(df_lfs['date'])
@@ -51,10 +51,14 @@ def load_and_preprocess_data():
 
     available_years = sorted(df['date'].dt.year.unique(), reverse=True)
 
-    return df, available_years, features
+    url_geo = "https://raw.githubusercontent.com/atifmustaffa/malaysia-geojson/refs/heads/master/malaysia.district.min.geojson"
+    response = requests.get(url_geo)
+    geo_json = response.json() if response.status_code == 200 else None
+
+    return df, available_years, features, geo_json
 
 
-df_all, available_years, features = load_and_preprocess_data()
+df_all, available_years, features, geo_json = load_and_preprocess_data()
 
 if df_all is not None:
     # ---------------------------------------------------------
@@ -109,6 +113,15 @@ if df_all is not None:
 
     csv_all = df_latest[['state', 'district', 'cluster', 'cluster_name'] + features].to_csv(index=False)
     st.sidebar.download_button(":material/download: Download All Districts", csv_all, "all_districts.csv")
+
+    DISTRICT_NAME_MAP = {
+        "Larut & Matang": "Larut Dan Matang",
+        "S.P. Selatan": "Seberang Perai Selatan",
+        "S.P.Tengah": "Seberang Perai Tengah",
+        "S.P.Utara": "Seberang Perai Utara",
+        "Hulu": "Hulu Terengganu",
+        "Lubok antu": "Lubok Antu",
+    }
 
     # ---------------------------------------------------------
     # 4. APP INTERFACE
@@ -384,9 +397,40 @@ if df_all is not None:
         st.info("Select at least one state to view trends.")
 
     st.markdown("---")
+    st.subheader("6. :material/map: Malaysia District Map (Choropleth)")
+    st.markdown("Districts are colored by their cluster assignment. Hover over a district to see its key metrics.")
+
+    if geo_json is not None:
+        plot_data = df_latest.copy()
+        plot_data['geo_name'] = plot_data['district'].map(DISTRICT_NAME_MAP).fillna(plot_data['district'])
+
+        geo_names = set(f['properties']['name'] for f in geo_json['features'])
+        matched_count = plot_data['geo_name'].isin(geo_names).sum()
+        unmatched_count = len(plot_data) - matched_count
+
+        fig_map = px.choropleth_map(
+            plot_data, geojson=geo_json,
+            locations='geo_name', featureidkey='properties.name',
+            color='cluster_name', hover_name='district',
+            hover_data=['state', 'income_median', 'poverty'],
+            map_style="open-street-map",
+            zoom=4.5, center={"lat": 4.5, "lon": 109.0},
+            opacity=0.6, height=650,
+            labels={'cluster_name': 'District Profile'}
+        )
+        fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+        st.plotly_chart(fig_map, use_container_width=True)
+
+        if unmatched_count > 0:
+            st.caption(f"{unmatched_count} district(s) could not be mapped (not found in boundary data).")
+    else:
+        st.warning("GeoJSON boundary data could not be loaded. Map unavailable.")
+
+    st.markdown("---")
     st.markdown(
         "**Data sources:** "
         "[HIES District](https://api.data.gov.my/data-catalogue?id=hies_district) | "
         "[LFS District](https://api.data.gov.my/data-catalogue?id=lfs_district) | "
+        "[District Boundaries](https://github.com/atifmustaffa/malaysia-geojson) | "
         "[OpenDOSM](https://open.dosm.gov.my)"
     )
