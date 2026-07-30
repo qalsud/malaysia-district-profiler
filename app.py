@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
-from sklearn.metrics import pairwise_distances
+from sklearn.metrics import pairwise_distances, silhouette_score
 
 st.set_page_config(
     page_title="Malaysian District Socioeconomic Profiler",
@@ -160,6 +160,37 @@ if df_all is not None:
     )
     st.plotly_chart(fig, use_container_width=True)
 
+    with st.expander("Optimal Cluster Count (K) Analysis"):
+        k_range = list(range(2, 11))
+
+        inertias = []
+        for k in k_range:
+            km = KMeans(n_clusters=k, random_state=42, n_init=10)
+            km.fit(X_scaled)
+            inertias.append(km.inertia_)
+
+        silhouettes = []
+        for k in k_range:
+            km = KMeans(n_clusters=k, random_state=42, n_init=10)
+            labels = km.fit_predict(X_scaled)
+            silhouettes.append(silhouette_score(X_scaled, labels))
+
+        col_e1, col_e2 = st.columns(2)
+        with col_e1:
+            fig_elbow = px.line(
+                x=k_range, y=inertias, markers=True,
+                labels={'x': 'K (Clusters)', 'y': 'Inertia'},
+                title='Elbow Method', template='plotly_white', height=350
+            )
+            st.plotly_chart(fig_elbow, use_container_width=True)
+        with col_e2:
+            fig_sil = px.line(
+                x=k_range, y=silhouettes, markers=True,
+                labels={'x': 'K (Clusters)', 'y': 'Silhouette Score'},
+                title='Silhouette Score', template='plotly_white', height=350
+            )
+            st.plotly_chart(fig_sil, use_container_width=True)
+
     # SECTION 2: Correlation Heatmap
     st.markdown("---")
     st.subheader("2. Feature Correlation Matrix")
@@ -309,6 +340,38 @@ if df_all is not None:
                         compare_data.append([label, f'{val_a:.3f}', f'{val_b:.3f}'])
                 compare_df = pd.DataFrame(compare_data, columns=['Metric', dist_a, dist_b])
                 st.dataframe(compare_df, use_container_width=True)
+
+    with st.expander("Cluster Interpretation"):
+        centroid_df = pd.DataFrame(kmeans.cluster_centers_, columns=features)
+        centroid_df['cluster'] = centroid_df.index
+        centroid_df['cluster'] = centroid_df['cluster'].apply(
+            lambda x: cluster_names.get(x, f"Cluster {x}") if chosen_k == 3 else f"Cluster {x}"
+        )
+        melted = centroid_df.melt(id_vars='cluster', var_name='feature', value_name='z_score')
+        melted['feature'] = melted['feature'].map(metric_labels)
+
+        fig_cent = px.bar(
+            melted, x='z_score', y='feature', color='cluster',
+            barmode='group', template='plotly_white', height=400,
+            labels={'z_score': 'Standardized Value (Z-Score)', 'feature': '', 'cluster': ''}
+        )
+        fig_cent.update_layout(yaxis=dict(categoryorder='total ascending'))
+        st.plotly_chart(fig_cent, use_container_width=True)
+        st.caption("Positive z-scores = above district average. Features are ordered by total magnitude across clusters.")
+
+    with st.expander("Outlier Detection"):
+        dists = []
+        for i in range(len(X_scaled)):
+            c = kmeans.cluster_centers_[df_latest.iloc[i]['cluster']]
+            dists.append(np.linalg.norm(X_scaled[i] - c))
+        df_latest['dist_to_centroid'] = dists
+
+        outliers = df_latest.nlargest(5, 'dist_to_centroid')[
+            ['state', 'district', 'cluster_name', 'dist_to_centroid']
+        ]
+        outliers['dist_to_centroid'] = outliers['dist_to_centroid'].round(3)
+        st.dataframe(outliers, use_container_width=True)
+        st.caption("Districts furthest from their cluster centroid — these are the least typical members of each group.")
 
     # SECTION 4: Twin District Finder
     st.markdown("---")
