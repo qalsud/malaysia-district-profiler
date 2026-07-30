@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import requests
 import plotly.express as px
+import plotly.graph_objects as go
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
@@ -93,6 +94,16 @@ if df_all is not None:
     df_latest['PC2'] = pca_transformed[:, 1]
     var_explained = sum(pca.explained_variance_ratio_) * 100
 
+    metric_labels = {
+        'income_median': 'Median Income (RM)',
+        'income_mean': 'Mean Income (RM)',
+        'expenditure_mean': 'Mean Expenditure (RM)',
+        'gini': 'Gini Coefficient',
+        'poverty': 'Poverty Rate (%)',
+        'u_rate': 'Unemployment Rate (%)',
+        'p_rate': 'Participation Rate (%)'
+    }
+
     # ---------------------------------------------------------
     # 4. APP INTERFACE
     # ---------------------------------------------------------
@@ -165,6 +176,47 @@ if df_all is not None:
 
     st.dataframe(profile_df, use_container_width=True)
 
+    with st.expander("District Radar Profile"):
+        col_r1, col_r2 = st.columns(2)
+        with col_r1:
+            state_list = sorted(df_latest['state'].unique())
+            radar_state = st.selectbox("Select State", state_list, key="radar_state")
+        districts_in_state = sorted(df_latest[df_latest['state'] == radar_state]['district'].unique())
+        with col_r2:
+            radar_district = st.selectbox("Select District", districts_in_state, key="radar_district")
+
+        if radar_district:
+            idx = df_latest[(df_latest['state'] == radar_state) & (df_latest['district'] == radar_district)].index[0]
+            row_pos = df_latest.index.get_loc(idx)
+
+            district_vals = X_scaled[row_pos]
+            cluster_label = df_latest.loc[idx, 'cluster']
+            centroid_vals = kmeans.cluster_centers_[cluster_label]
+            cluster_name = df_latest.loc[idx, 'cluster_name']
+
+            fig_radar = go.Figure()
+            fig_radar.add_trace(go.Scatterpolar(
+                r=district_vals,
+                theta=[metric_labels[f] for f in features],
+                fill='toself',
+                name=f'{radar_district}'
+            ))
+            fig_radar.add_trace(go.Scatterpolar(
+                r=centroid_vals,
+                theta=[metric_labels[f] for f in features],
+                fill='toself',
+                name=f'{cluster_name} avg',
+                line=dict(dash='dash')
+            ))
+            fig_radar.update_layout(
+                polar=dict(radialaxis=dict(visible=True)),
+                template='plotly_white',
+                height=500,
+                title=f'{radar_district}, {radar_state} vs {cluster_name} Average'
+            )
+            st.plotly_chart(fig_radar, use_container_width=True)
+            st.caption("Values shown are standardized z-scores. Positive = above district average, negative = below.")
+
     # SECTION 4: Twin District Finder
     st.markdown("---")
     st.subheader("4. :material/search_globe: Twin District Finder")
@@ -215,16 +267,6 @@ if df_all is not None:
     trend_df = df_all.copy()
     trend_df['year'] = trend_df['date'].dt.year
     trend_agg = trend_df.groupby(['state', 'year'])[features].mean().reset_index()
-
-    metric_labels = {
-        'income_median': 'Median Income (RM)',
-        'income_mean': 'Mean Income (RM)',
-        'expenditure_mean': 'Mean Expenditure (RM)',
-        'gini': 'Gini Coefficient',
-        'poverty': 'Poverty Rate (%)',
-        'u_rate': 'Unemployment Rate (%)',
-        'p_rate': 'Participation Rate (%)'
-    }
 
     state_options = sorted(trend_agg['state'].unique())
     selected_states = st.multiselect(
