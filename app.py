@@ -66,6 +66,9 @@ if df_all is not None:
     selected_year = st.sidebar.selectbox("Survey Year", available_years)
     chosen_k = st.sidebar.slider("Number of Clusters (K)", min_value=2, max_value=6, value=3, step=1)
 
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### :material/download: Export")
+
     # Filter to selected year
     df_latest = df_all[df_all['date'].dt.year == selected_year].copy()
 
@@ -103,6 +106,9 @@ if df_all is not None:
         'u_rate': 'Unemployment Rate (%)',
         'p_rate': 'Participation Rate (%)'
     }
+
+    csv_all = df_latest[['state', 'district', 'cluster', 'cluster_name'] + features].to_csv(index=False)
+    st.sidebar.download_button(":material/download: Download All Districts", csv_all, "all_districts.csv")
 
     # ---------------------------------------------------------
     # 4. APP INTERFACE
@@ -175,6 +181,8 @@ if df_all is not None:
     profile_df['p_rate'] = profile_df['p_rate'].apply(lambda x: f"{x:.1f}%")
 
     st.dataframe(profile_df, use_container_width=True)
+    csv_profile = profile_df.to_csv(index=False)
+    st.download_button(":material/download: Download Profile Summary", csv_profile, "cluster_profiles.csv")
 
     with st.expander("District Radar Profile"):
         col_r1, col_r2 = st.columns(2)
@@ -330,6 +338,10 @@ if df_all is not None:
                 st.write(f"**Poverty Rate:** {row['poverty']:.1f}%")
                 st.write(f"**Unemployment:** {row['u_rate']:.1f}%")
                 st.write(f"**Participation:** {row['p_rate']:.1f}%")
+
+        twin_cols = ['district', 'state', 'cluster_name', 'income_median', 'poverty', 'u_rate', 'p_rate']
+        csv_twins = twins[twin_cols].to_csv(index=False)
+        st.download_button(":material/download: Download Twin Results", csv_twins, "twin_results.csv")
 
     # SECTION 5: Trends Over Time
     st.markdown("---")
