@@ -103,7 +103,7 @@ with tab_clusters:
         template='plotly_white',
         height=550
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     with st.expander("Optimal Cluster Count (K) Analysis"):
         k_range, inertias, silhouettes = compute_optimal_k_metrics(X_scaled)
@@ -115,14 +115,14 @@ with tab_clusters:
                 labels={'x': 'K (Clusters)', 'y': 'Inertia'},
                 title='Elbow Method', template='plotly_white', height=350
             )
-            st.plotly_chart(fig_elbow, use_container_width=True)
+            st.plotly_chart(fig_elbow, width='stretch')
         with col_e2:
             fig_sil = px.line(
                 x=k_range, y=silhouettes, markers=True,
                 labels={'x': 'K (Clusters)', 'y': 'Silhouette Score'},
                 title='Silhouette Score', template='plotly_white', height=350
             )
-            st.plotly_chart(fig_sil, use_container_width=True)
+            st.plotly_chart(fig_sil, width='stretch')
 
     st.subheader("Feature Correlation Matrix")
     st.markdown(
@@ -139,7 +139,7 @@ with tab_clusters:
         template='plotly_white',
         height=500
     )
-    st.plotly_chart(fig_corr, use_container_width=True)
+    st.plotly_chart(fig_corr, width='stretch')
 
 with tab_districts:
     st.subheader("Cluster Profile Summary")
@@ -160,7 +160,7 @@ with tab_districts:
     profile_df['u_rate'] = profile_df['u_rate'].apply(lambda x: f"{x:.1f}%")
     profile_df['p_rate'] = profile_df['p_rate'].apply(lambda x: f"{x:.1f}%")
 
-    st.dataframe(profile_df, use_container_width=True)
+    st.dataframe(profile_df, width='stretch')
     csv_profile = profile_df.to_csv(index=False)
     st.download_button(":material/download: Download Profile Summary", csv_profile, "cluster_profiles.csv")
 
@@ -210,7 +210,7 @@ with tab_districts:
                 height=500,
                 title=f'{radar_district}, {radar_state} vs {cluster_name} Average'
             )
-            st.plotly_chart(fig_radar, use_container_width=True)
+            st.plotly_chart(fig_radar, width='stretch')
             st.caption("Values shown are standardized z-scores. Positive = above district average, negative = below.")
 
     elif sub_tab == "Compare Districts":
@@ -271,7 +271,7 @@ with tab_districts:
                     template='plotly_white', height=500,
                     title=f'{dist_a} vs {dist_b}'
                 )
-                st.plotly_chart(fig_compare, use_container_width=True)
+                st.plotly_chart(fig_compare, width='stretch')
 
                 row_a_raw = df_latest.loc[idx_a]
                 row_b_raw = df_latest.loc[idx_b]
@@ -287,7 +287,7 @@ with tab_districts:
                     elif f == 'gini':
                         compare_data.append([label, f'{val_a:.3f}', f'{val_b:.3f}'])
                 compare_df = pd.DataFrame(compare_data, columns=['Metric', dist_a, dist_b])
-                st.dataframe(compare_df, use_container_width=True)
+                st.dataframe(compare_df, width='stretch')
 
     elif sub_tab == "Cluster Centroids":
         centroid_df = pd.DataFrame(kmeans.cluster_centers_, columns=CLUSTER_FEATURES)
@@ -304,7 +304,7 @@ with tab_districts:
             labels={'z_score': 'Standardized Value (Z-Score)', 'feature': '', 'cluster': ''}
         )
         fig_cent.update_layout(yaxis=dict(categoryorder='total ascending'))
-        st.plotly_chart(fig_cent, use_container_width=True)
+        st.plotly_chart(fig_cent, width='stretch')
         st.caption("Positive z-scores = above district average. Features are ordered by total magnitude across clusters.")
 
     elif sub_tab == "Outliers":
@@ -315,7 +315,7 @@ with tab_districts:
             ['state', 'district', 'cluster_name', 'dist_to_centroid']
         ]
         outliers['dist_to_centroid'] = outliers['dist_to_centroid'].round(3)
-        st.dataframe(outliers, use_container_width=True)
+        st.dataframe(outliers, width='stretch')
         st.caption("Districts furthest from their cluster centroid \u2014 the least typical members of each group.")
 
 with tab_explore:
@@ -404,7 +404,7 @@ with tab_explore:
             labels={'year': 'Year', trend_metric: METRIC_LABELS[trend_metric], 'state': 'State'}
         )
         fig_trend.update_traces(line=dict(width=2.5))
-        st.plotly_chart(fig_trend, use_container_width=True)
+        st.plotly_chart(fig_trend, width='stretch')
     else:
         st.info("Select at least one state to view trends.")
 
@@ -431,7 +431,7 @@ with tab_explore:
             labels={'cluster_name': 'District Profile'}
         )
         fig_map.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_map, width='stretch')
 
         if unmatched_count > 0:
             st.caption(f"{unmatched_count} district(s) could not be mapped (not found in boundary data).")

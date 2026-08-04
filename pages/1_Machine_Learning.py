@@ -95,17 +95,15 @@ y_train_unemp = df_train['u_rate'].values
 X_test_unemp = df_test[unemp_features].values
 y_test_unemp = df_test['u_rate'].values
 
-X_train_inc = df_train[income_class_features].values
 y_train_inc = bin_income(df_train, 'income_median')
-X_test_inc = df_test[income_class_features].values
-y_test_inc = bin_income(df_test, 'income_median')
-y_train_inc = y_train_inc.dropna()
-valid_inc_train = y_train_inc.index
-X_train_inc = X_train_inc[valid_inc_train]
+mask_train_inc = y_train_inc.notna()
+X_train_inc = df_train.loc[mask_train_inc, income_class_features].values
+y_train_inc = y_train_inc[mask_train_inc].values
 
-valid_inc_test = y_test_inc.dropna().index
-y_test_inc = y_test_inc.loc[valid_inc_test]
-X_test_inc = X_test_inc[valid_inc_test]
+y_test_inc = bin_income(df_test, 'income_median')
+mask_test_inc = y_test_inc.notna()
+X_test_inc = df_test.loc[mask_test_inc, income_class_features].values
+y_test_inc = y_test_inc[mask_test_inc].values
 
 # ---------------------------------------------------------
 # Model selector in sidebar
@@ -166,7 +164,7 @@ with tab_poverty:
                        name='Perfect Prediction', line=dict(dash='dash', color='gray'))
         )
         fig_avp.update_layout(showlegend=False)
-        st.plotly_chart(fig_avp, use_container_width=True)
+        st.plotly_chart(fig_avp, width='stretch')
 
     with col_p2:
         st.markdown("**Feature Importance**")
@@ -176,7 +174,7 @@ with tab_poverty:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_pov, use_container_width=True)
+        st.plotly_chart(fig_imp_pov, width='stretch')
 
     st.markdown("**Prediction Errors — Over/Under-Predicted Districts**")
     df_errors = df_test[['state', 'district']].copy()
@@ -193,7 +191,7 @@ with tab_poverty:
             .style.format({
                 'actual_poverty': '{:.2f}%', 'predicted_poverty': '{:.2f}%', 'residual': '{:.2f}%'
             }),
-            use_container_width=True
+            width='stretch'
         )
     with col_err2:
         st.markdown("**Most Over-Predicted** (lower poverty than expected)")
@@ -202,7 +200,7 @@ with tab_poverty:
             .style.format({
                 'actual_poverty': '{:.2f}%', 'predicted_poverty': '{:.2f}%', 'residual': '{:.2f}%'
             }),
-            use_container_width=True
+            width='stretch'
         )
 
     csv_pov = df_errors.to_csv(index=False)
@@ -245,7 +243,7 @@ with tab_unemp:
                        name='Perfect Prediction', line=dict(dash='dash', color='gray'))
         )
         fig_avp_u.update_layout(showlegend=False)
-        st.plotly_chart(fig_avp_u, use_container_width=True)
+        st.plotly_chart(fig_avp_u, width='stretch')
 
     with col_up2:
         st.markdown("**Feature Importance**")
@@ -255,7 +253,7 @@ with tab_unemp:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_u, use_container_width=True)
+        st.plotly_chart(fig_imp_u, width='stretch')
 
     st.markdown("**Prediction Errors — Most Under/Over-Predicted Districts**")
     df_errors_u = df_test[['state', 'district']].copy()
@@ -272,7 +270,7 @@ with tab_unemp:
             .style.format({
                 'actual_unemp': '{:.2f}%', 'predicted_unemp': '{:.2f}%', 'residual': '{:.2f}%'
             }),
-            use_container_width=True
+            width='stretch'
         )
     with col_eu2:
         st.markdown("**Most Over-Predicted**")
@@ -281,7 +279,7 @@ with tab_unemp:
             .style.format({
                 'actual_unemp': '{:.2f}%', 'predicted_unemp': '{:.2f}%', 'residual': '{:.2f}%'
             }),
-            use_container_width=True
+            width='stretch'
         )
 
     csv_unemp = df_errors_u.to_csv(index=False)
@@ -327,7 +325,7 @@ with tab_income:
                 labels={'x': 'Predicted', 'y': 'Actual', 'color': 'Count'},
                 height=400
             )
-            st.plotly_chart(fig_cm, use_container_width=True)
+            st.plotly_chart(fig_cm, width='stretch')
 
         with col_ic2:
             st.markdown("**Feature Importance**")
@@ -337,20 +335,19 @@ with tab_income:
                 orientation='h', template='plotly_white', height=400,
                 labels={'importance': 'Importance', 'feature': ''}
             )
-            st.plotly_chart(fig_imp_inc, use_container_width=True)
+            st.plotly_chart(fig_imp_inc, width='stretch')
 
         st.markdown("**Misclassified Districts**")
-        df_misclass = df_test[['state', 'district']].copy()
-        df_misclass = df_misclass.iloc[valid_inc_test].reset_index(drop=True)
-        df_misclass['actual'] = y_test_inc.values
+        df_misclass = df_test.loc[mask_test_inc, ['state', 'district']].copy()
+        df_misclass['actual'] = y_test_inc
         df_misclass['predicted'] = y_pred_inc
-        df_misclass['income_median'] = df_test['income_median'].iloc[valid_inc_test].values
+        df_misclass['income_median'] = df_test.loc[mask_test_inc, 'income_median'].values
         misclassified = df_misclass[df_misclass['actual'] != df_misclass['predicted']]
 
         if len(misclassified) > 0:
             st.dataframe(
                 misclassified.sort_values('income_median', ascending=True),
-                use_container_width=True
+                width='stretch'
             )
             st.caption(f"{len(misclassified)} districts were misclassified out of {len(df_misclass)} test districts.")
         else:
@@ -414,7 +411,7 @@ with tab_vuln:
                     'unemp_actual': '{:.2f}%', 'unemp_predicted': '{:.2f}%',
                     'vulnerability_score': '{:.3f}'
                 }),
-                use_container_width=True
+                width='stretch'
             )
         with col_vt2:
             st.markdown("**Top 10 Least Vulnerable Districts**")
@@ -426,14 +423,14 @@ with tab_vuln:
                     'unemp_actual': '{:.2f}%', 'unemp_predicted': '{:.2f}%',
                     'vulnerability_score': '{:.3f}'
                 }),
-                use_container_width=True
+                width='stretch'
             )
 
         st.markdown("**Full Vulnerability Ranking**")
         st.dataframe(
             df_vuln[['rank', 'state', 'district', 'poverty_actual', 'poverty_predicted',
                      'unemp_actual', 'unemp_predicted', 'vulnerability_score']],
-            use_container_width=True
+            width='stretch'
         )
 
         csv_vuln = df_vuln.to_csv(index=False)
@@ -460,7 +457,7 @@ with tab_feat:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_full, use_container_width=True)
+        st.plotly_chart(fig_imp_full, width='stretch')
 
     with col_fe2:
         st.markdown("**Unemployment Model**")
@@ -470,7 +467,7 @@ with tab_feat:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_u_full, use_container_width=True)
+        st.plotly_chart(fig_imp_u_full, width='stretch')
 
     st.markdown("---")
     st.markdown("### State-Level Feature Importance")
@@ -498,7 +495,7 @@ with tab_feat:
             labels={'importance': 'Importance', 'feature': ''},
             title=f'Poverty Feature Importance — {feat_state}'
         )
-        st.plotly_chart(fig_imp_state, use_container_width=True)
+        st.plotly_chart(fig_imp_state, width='stretch')
     else:
         st.info(f"Not enough districts in {feat_state} for a state-level model (found {len(df_state)}).")
 
@@ -552,6 +549,6 @@ with tab_feat:
                 labels={'diff_from_avg': 'Deviation from Average', 'feature': ''},
                 color='diff_from_avg', color_continuous_scale='RdBu_r',
             )
-            st.plotly_chart(fig_explain, use_container_width=True)
+            st.plotly_chart(fig_explain, width='stretch')
         else:
             st.info(f"{exp_district} not found in the test year data.")
