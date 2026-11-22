@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_score, KFold, StratifiedKFold
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier, GradientBoostingRegressor
 
@@ -53,9 +53,17 @@ def get_feature_importances(model, feature_names):
     return df_imp
 
 
+# The district rows are sorted by state, so an unshuffled KFold would create
+# state-contiguous folds. Shuffle for a more representative CV estimate.
+_CV_REGRESSION = KFold(n_splits=5, shuffle=True, random_state=42)
+_CV_CLASSIFICATION = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+
 def train_poverty_predictor(X_train, y_train, model_name="Random Forest"):
     model = _train_regressor(model_name, X_train, y_train)
-    cv_r2 = cross_val_score(model, X_train, y_train, cv=5, scoring='r2').mean()
+    cv_r2 = cross_val_score(
+        model, X_train, y_train, cv=_CV_REGRESSION, scoring='r2'
+    ).mean()
     return model, cv_r2
 
 
@@ -65,8 +73,12 @@ def train_unemployment_predictor(X_train, y_train, model_name="Random Forest"):
 
 def train_income_classifier(X_train, y_train, model_name="Random Forest"):
     model = _train_classifier(model_name, X_train, y_train)
-    cv_acc = cross_val_score(model, X_train, y_train, cv=5, scoring='accuracy').mean()
-    cv_f1 = cross_val_score(model, X_train, y_train, cv=5, scoring='f1_weighted').mean()
+    cv_acc = cross_val_score(
+        model, X_train, y_train, cv=_CV_CLASSIFICATION, scoring='accuracy'
+    ).mean()
+    cv_f1 = cross_val_score(
+        model, X_train, y_train, cv=_CV_CLASSIFICATION, scoring='f1_weighted'
+    ).mean()
     return model, cv_acc, cv_f1
 
 

@@ -24,24 +24,34 @@ METRIC_LABELS = {
     'sanitation': 'Sanitation Access (%)',
 }
 
-DISTRICT_NAME_MAP = {
-    "Larut & Matang": "Larut Dan Matang",
+# District names are not consistent across the HIES, LFS and amenities
+# datasets. Normalise them before merging so the same district is not
+# silently treated as missing.
+DISTRICT_ALIASES = {
+    "Larut Dan Matang": "Larut & Matang",
+    "Larut dan Matang": "Larut & Matang",
     "S.P. Selatan": "Seberang Perai Selatan",
     "S.P.Tengah": "Seberang Perai Tengah",
     "S.P.Utara": "Seberang Perai Utara",
     "Hulu": "Hulu Terengganu",
     "Lubok antu": "Lubok Antu",
+    "Ulu Langat": "Hulu Langat",
+    "Ulu Selangor": "Hulu Selangor",
+    "Tanjong Manis": "Tanjung Manis",
 }
 
-CLUSTER_NAMES_K3 = {
-    1: "High-Income Metro Hubs",
-    0: "Middle-Income Towns & Suburbs",
-    2: "Rural & High-Poverty Districts",
+# Maps the normalised names to the names used by the GeoJSON file.
+DISTRICT_NAME_MAP = {
+    "Larut & Matang": "Larut Dan Matang",
+    "Hulu Langat": "Ulu Langat",
+    "Hulu Selangor": "Ulu Selangor",
 }
 
-URL_HIES = "https://api.data.gov.my/data-catalogue?id=hies_district&limit=500"
-URL_LFS = "https://api.data.gov.my/data-catalogue?id=lfs_district&limit=500"
-URL_AMENITIES = "https://api.data.gov.my/data-catalogue?id=hh_access_amenities&limit=500"
+# The LFS and amenities endpoints contain more than 500 rows, so a limit of
+# 500 returns only part of the data and leaves most districts missing.
+URL_HIES = "https://api.data.gov.my/data-catalogue?id=hies_district&limit=5000"
+URL_LFS = "https://api.data.gov.my/data-catalogue?id=lfs_district&limit=5000"
+URL_AMENITIES = "https://api.data.gov.my/data-catalogue?id=hh_access_amenities&limit=5000"
 URL_GEOJSON = "https://raw.githubusercontent.com/atifmustaffa/malaysia-geojson/refs/heads/master/malaysia.district.min.geojson"
 
 INCOME_BRACKETS = [

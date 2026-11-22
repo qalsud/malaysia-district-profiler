@@ -1,6 +1,6 @@
 # Malaysian District Socioeconomic Profiler
 
-A dashboard that profiles Malaysian districts using unsupervised and supervised ML on live OpenDOSM census data. Groups ~160 districts into economic archetypes with K-Means, and predicts poverty, unemployment, and income brackets with regression and classification models.
+A dashboard that profiles Malaysian districts using unsupervised and supervised ML on live OpenDOSM survey data. Groups ~160 districts into economic archetypes with K-Means, and predicts poverty, unemployment, and income brackets with regression and classification models.
 
 Live Demo: https://malaysia-district-profiler-irvqp4zbpzyq99vk8fecp3.streamlit.app/
 

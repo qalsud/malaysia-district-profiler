@@ -21,7 +21,7 @@ from src.supervised import (
     bin_income,
     compute_vulnerability_score,
 )
-from src.unsupervised import run_kmeans_pipeline
+from src.unsupervised import run_kmeans_pipeline, build_cluster_name_map
 
 st.set_page_config(
     page_title="ML Lab — District Profiler",
@@ -164,7 +164,7 @@ with tab_poverty:
                        name='Perfect Prediction', line=dict(dash='dash', color='gray'))
         )
         fig_avp.update_layout(showlegend=False)
-        st.plotly_chart(fig_avp, width='stretch')
+        st.plotly_chart(fig_avp, width='stretch', key="poverty_actual_vs_pred")
 
     with col_p2:
         st.markdown("**Feature Importance**")
@@ -174,7 +174,7 @@ with tab_poverty:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_pov, width='stretch')
+        st.plotly_chart(fig_imp_pov, width='stretch', key="poverty_importance")
 
     st.markdown("**Prediction Errors — Over/Under-Predicted Districts**")
     df_errors = df_test[['state', 'district']].copy()
@@ -243,7 +243,7 @@ with tab_unemp:
                        name='Perfect Prediction', line=dict(dash='dash', color='gray'))
         )
         fig_avp_u.update_layout(showlegend=False)
-        st.plotly_chart(fig_avp_u, width='stretch')
+        st.plotly_chart(fig_avp_u, width='stretch', key="unemp_actual_vs_pred")
 
     with col_up2:
         st.markdown("**Feature Importance**")
@@ -253,7 +253,7 @@ with tab_unemp:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_u, width='stretch')
+        st.plotly_chart(fig_imp_u, width='stretch', key="unemp_importance")
 
     st.markdown("**Prediction Errors — Most Under/Over-Predicted Districts**")
     df_errors_u = df_test[['state', 'district']].copy()
@@ -296,7 +296,7 @@ with tab_income:
     )
     st.markdown(f"Train year: **{train_year}**, Test year: **{test_year}**, Split: **{split_strategy}**")
 
-    if len(y_train_inc) < 10 or y_test_inc.nunique() < 2:
+    if len(y_train_inc) < 10 or len(pd.unique(y_test_inc)) < 2:
         st.warning("Not enough data or class diversity for classification. Try a different year split.")
     else:
         with st.spinner("Training income bracket classifier..."):
@@ -325,7 +325,7 @@ with tab_income:
                 labels={'x': 'Predicted', 'y': 'Actual', 'color': 'Count'},
                 height=400
             )
-            st.plotly_chart(fig_cm, width='stretch')
+            st.plotly_chart(fig_cm, width='stretch', key="income_confusion_matrix")
 
         with col_ic2:
             st.markdown("**Feature Importance**")
@@ -335,7 +335,7 @@ with tab_income:
                 orientation='h', template='plotly_white', height=400,
                 labels={'importance': 'Importance', 'feature': ''}
             )
-            st.plotly_chart(fig_imp_inc, width='stretch')
+            st.plotly_chart(fig_imp_inc, width='stretch', key="income_importance")
 
         st.markdown("**Misclassified Districts**")
         df_misclass = df_test.loc[mask_test_inc, ['state', 'district']].copy()
@@ -378,18 +378,20 @@ with tab_vuln:
             pov_feat_present = [f for f in must_features_pov if f in df_latest.columns]
             unemp_feat_present = [f for f in must_features_unemp if f in df_latest.columns]
 
+            cluster_features_v = [f for f in CLUSTER_FEATURES if f in df_latest.columns]
             df_kmeans, X_scaled_v, kmeans_v, _, _ = run_kmeans_pipeline(
                 df_latest,
-                [f for f in CLUSTER_FEATURES if f in df_latest.columns],
+                cluster_features_v,
                 k=3
             )
+            cluster_names_v = build_cluster_name_map(kmeans_v, cluster_features_v)
 
             df_vuln = compute_vulnerability_score(
                 df_latest, X_scaled_v,
                 model_pov, model_unemp,
                 pov_feat_present, unemp_feat_present,
                 df_kmeans['cluster'].values,
-                {1: "High-Income Metro Hubs", 0: "Middle-Income Towns & Suburbs", 2: "Rural & High-Poverty Districts"}
+                cluster_names_v
             )
 
         col_v1, col_v2, col_v3 = st.columns(3)
@@ -457,7 +459,7 @@ with tab_feat:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_full, width='stretch')
+        st.plotly_chart(fig_imp_full, width='stretch', key="global_poverty_importance")
 
     with col_fe2:
         st.markdown("**Unemployment Model**")
@@ -467,7 +469,7 @@ with tab_feat:
             orientation='h', template='plotly_white', height=400,
             labels={'importance': 'Importance', 'feature': ''}
         )
-        st.plotly_chart(fig_imp_u_full, width='stretch')
+        st.plotly_chart(fig_imp_u_full, width='stretch', key="global_unemployment_importance")
 
     st.markdown("---")
     st.markdown("### State-Level Feature Importance")
@@ -495,7 +497,7 @@ with tab_feat:
             labels={'importance': 'Importance', 'feature': ''},
             title=f'Poverty Feature Importance — {feat_state}'
         )
-        st.plotly_chart(fig_imp_state, width='stretch')
+        st.plotly_chart(fig_imp_state, width='stretch', key="state_poverty_importance")
     else:
         st.info(f"Not enough districts in {feat_state} for a state-level model (found {len(df_state)}).")
 
@@ -549,6 +551,6 @@ with tab_feat:
                 labels={'diff_from_avg': 'Deviation from Average', 'feature': ''},
                 color='diff_from_avg', color_continuous_scale='RdBu_r',
             )
-            st.plotly_chart(fig_explain, width='stretch')
+            st.plotly_chart(fig_explain, width='stretch', key="district_explanation")
         else:
             st.info(f"{exp_district} not found in the test year data.")

@@ -6,10 +6,11 @@ import plotly.graph_objects as go
 
 from sklearn.metrics import pairwise_distances
 
-from src.constants import CLUSTER_FEATURES, METRIC_LABELS, DISTRICT_NAME_MAP, CLUSTER_NAMES_K3
+from src.constants import CLUSTER_FEATURES, METRIC_LABELS, DISTRICT_NAME_MAP
 from src.data_loader import load_and_preprocess_data
 from src.unsupervised import (
-    run_kmeans_pipeline, compute_optimal_k_metrics, compute_cluster_distances
+    run_kmeans_pipeline, compute_optimal_k_metrics, compute_cluster_distances,
+    build_cluster_name_map,
 )
 
 st.set_page_config(
@@ -50,10 +51,7 @@ df_latest, X_scaled, kmeans, pca, var_explained = run_kmeans_pipeline(
     df_latest, CLUSTER_FEATURES, chosen_k
 )
 
-if chosen_k == 3:
-    cluster_name_map = CLUSTER_NAMES_K3
-else:
-    cluster_name_map = {i: f"Cluster {i}" for i in range(chosen_k)}
+cluster_name_map = build_cluster_name_map(kmeans, CLUSTER_FEATURES)
 
 df_latest['cluster_name'] = df_latest['cluster'].map(cluster_name_map)
 
@@ -67,7 +65,7 @@ with st.sidebar.container(border=True):
 # ---------------------------------------------------------
 st.title(":material/map: Malaysian District Socioeconomic Profiler")
 st.markdown("""
-This web application uses **Unsupervised Machine Learning (K-Means & PCA)** on official census metrics
+This web application uses **Unsupervised Machine Learning (K-Means & PCA)** on official survey metrics
 sourced directly from the **OpenDOSM API** to group administrative districts based on their economic DNA.
 """)
 
